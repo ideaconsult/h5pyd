@@ -135,7 +135,10 @@ class AzureOpenID(OpenIDHandler):
 
         app_id = self.config["AD_APP_ID"]
         resource_id = self.config["AD_RESOURCE_ID"]
-        client_secret = self.config["AD_CLIENT_SECRET"]
+        if "AD_CLIENT_SECRET" in self.config:
+            client_secret = self.config["AD_CLIENT_SECRET"]
+        else:
+            client_secret = None
         authority_uri = self.AUTHORITY_URI + '/' + self.config["AD_TENANT_ID"]
 
         # Try to get a token using different oauth flows.
