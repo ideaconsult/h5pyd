@@ -67,7 +67,6 @@ def usage():
     print("     --nodata :: Do not upload dataset data")
     print("     -h | --help    :: This message.")
     print("")
-    raise ValueError()
 #end print_usage
 
 #----------------------------------------------------------------------------------
