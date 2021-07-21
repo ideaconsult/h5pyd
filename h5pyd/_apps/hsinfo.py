@@ -298,7 +298,7 @@ def main():
     logging.debug("set log_level to {}".format(cfg["loglevel"]))
 
     endpoint = cfg["hs_endpoint"]
-    if not endpoint or endpoint[-1] == '/' or endpoint[:4] != "http":
+    if not endpoint or endpoint[-1] == '/' or endpoint[:4] not in ("http", "loca"):
         print("WARNING: endpoint: {} doesn't appear to be valid".format(endpoint))
 
     if not domains:

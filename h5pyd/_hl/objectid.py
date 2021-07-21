@@ -124,11 +124,17 @@ class ObjectID:
         self._old_uuid = self._uuid  # for debugging
         self._uuid = 0
         self._obj_json = None
+        if self._http_conn:
+            self._http_conn.close()
         self._http_conn = None
 
     def __bool__(self):
         return bool(self._uuid)
 
+    def __del__(self):
+        """ cleanup """
+        self.close()
+        
     __nonzero__ = __bool__  # Python 2.7 compat
 
 

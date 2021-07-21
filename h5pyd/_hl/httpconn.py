@@ -14,8 +14,10 @@ from __future__ import absolute_import
 
 import os
 import sys
+import multiprocessing
 import base64
 import requests
+import requests_unixsocket
 from requests import ConnectionError
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -23,7 +25,9 @@ import json
 import logging
 
 from . import openid
+from .hsdsapp import HsdsApp
 from .config import Config
+from . import requests_lambda
 
 MAX_CACHE_ITEM_SIZE=10000  # max size of an item to put in the cache
 
@@ -32,6 +36,7 @@ def eprint(*args, **kwargs):
 
 
 DEFAULT_TIMEOUT = 180 # seconds - allow time for hsds service to bounce
+
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     def __init__(self, *args, **kwargs):
@@ -77,7 +82,7 @@ def getAzureApiKey():
     api_key = None
 
     # if Azure AD ids are set, pass them to HttpConn via api_key dict
-    cfg = Config() # pulls in state from a .hscfg file (if found).
+    cfg = Config()  # pulls in state from a .hscfg file (if found).
 
     ad_app_id = None  # Azure AD HSDS Server id
     if "HS_AD_APP_ID" in os.environ:
@@ -156,8 +161,9 @@ class HttpConn:
         self._mode = mode
         self._domain_json = None
         self._use_session = use_session
-        self._retries = retries
-
+        self._retries = 1  # for testing retries
+        self._hsds = None
+        self._lambda = None
         if use_cache:
             self._cache = {}
             self._objdb = {}
@@ -175,8 +181,31 @@ class HttpConn:
                 endpoint = os.environ["HS_ENDPOINT"]
             elif "H5SERV_ENDPOINT" in os.environ:
                 endpoint = os.environ["H5SERV_ENDPOINT"]
-            else:
-                endpoint = "http://127.0.0.1:5000"
+
+        if not endpoint:
+            msg = "no endpoint set"
+            raise ValueError(msg)
+    
+        if endpoint.startswith("lambda:"):
+             # save lambda function name
+             self._lambda = endpoint[len("lambda:"):]
+
+        elif endpoint == "local":
+            # create a local hsds server
+            # set the number of nodes equal to number of cores
+            dn_count = multiprocessing.cpu_count() 
+            dn_count = -(-dn_count // 2)  # get the ceiling of count / 2 (don't include hyperthreading cores)
+            if dn_count < 1:
+                dn_count = 1
+   
+            hsds = HsdsApp(username=username, password=password, dn_count=dn_count, logger=self.log)
+            hsds.run()
+            import time
+            time.sleep(2)
+            self._hsds = hsds
+            # replace 'local' with the socket path
+            endpoint = hsds.endpoint     
+            # print(f"got hsds endpoint: {endpoint} for 'local' connection") 
 
         self._endpoint = endpoint
 
@@ -239,6 +268,16 @@ class HttpConn:
 
         self._api_key = api_key
         self._s = None  # Sessions
+
+    def __del__(self):
+        if self._hsds:
+            # print('hsds stop')
+            self._hsds.stop()
+            self._hsds = None
+        if self._s:
+            # print("close session")
+            self._s.close()
+            self._s = None
 
 
     def getHeaders(self, username=None, password=None, headers=None):
@@ -340,9 +379,14 @@ class HttpConn:
                 self.log.debug(f"GET params {k}:{v}")
      
         try:
+            if self._hsds:
+                self._hsds.run()
+
             s = self.session
             rsp = s.get(self._endpoint + req, params=params, headers=headers, verify=self.verifyCert())
             self.log.info("status: {}".format(rsp.status_code))
+            if self._hsds:
+                self._hsds.run()
         except ConnectionError as ce:
             self.log.error("connection error: {}".format(ce))
             raise IOError("Connection Error")
@@ -369,7 +413,6 @@ class HttpConn:
             if rsp.status_code == 200 and req == '/':  # and self._domain_json is None:
                 self._domain_json = json.loads(rsp.text)
                 self.log.info("got domain json: {}".format(self._domain_json))
-
 
         return rsp
 
@@ -526,7 +569,14 @@ class HttpConn:
         method_whitelist = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]  # include POST retries
         if self._use_session:
             if self._s is None:
-                s = requests.Session()
+                if self._endpoint.startswith("http+unix://"):
+                    #print("create unixsocket session")
+                    s = requests_unixsocket.Session()
+                elif self._endpoint.startswith("http+lambdaa://"):
+                    s = requests_lambda.Session()
+                else:
+                    # regular request session
+                    s = requests.Session()
 
                 retry = Retry(
                     total=retries,
@@ -548,6 +598,9 @@ class HttpConn:
         if self._s:
             self._s.close()
             self._s = None
+        if self._hsds:
+            self._hsds.stop()
+            self._hsds = None
 
     @property
     def domain(self):
