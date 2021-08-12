@@ -572,7 +572,7 @@ class HttpConn:
                 if self._endpoint.startswith("http+unix://"):
                     #print("create unixsocket session")
                     s = requests_unixsocket.Session()
-                elif self._endpoint.startswith("http+lambdaa://"):
+                elif self._endpoint.startswith("http+lambda://"):
                     s = requests_lambda.Session()
                 else:
                     # regular request session

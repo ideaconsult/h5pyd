@@ -17,6 +17,7 @@ from copy import copy
 import sys
 import time
 import base64
+from multiprocessing import shared_memory
 import numpy
 
 from .base import HLObject, jsonToArray, bytesToArray, arrayToBytes, Empty
@@ -801,6 +802,9 @@ class Dataset(HLObject):
 
             arr = numpy.empty(mshape, dtype=mtype)
             params = {}
+            endpoint = self.id.http_conn.endpoint
+            if endpoint.startswith("http+unix"):
+                params["use_shared_mem"] = 1
             if self.id._http_conn.mode == 'r' and self.id._http_conn.cache_on:
                 # enables lambda to be used on server
                 self.log.debug("setting nonstrict parameter")
@@ -862,6 +866,23 @@ class Dataset(HLObject):
                         self.log.info("binary response, {} bytes".format(len(rsp)))
                         #arr1d = numpy.frombuffer(rsp, dtype=mtype)
                         arr1d = bytesToArray(rsp, mtype, page_mshape)
+                        page_arr = numpy.reshape(arr1d, page_mshape)
+                    elif "shm_name" in rsp:
+                        # passed a shared memory object
+                        shm_name = rsp["shm_name"]
+                        self.log.info(f"got shared memory object: {shm_name}")
+                        num_bytes = rsp["num_bytes"]
+                        try:
+                            shm = shared_memory.SharedMemory(name=shm_name)
+                        except FileNotFoundError:
+                            raise IOError("unable to access shared memory block")
+                        # shared memory block is generally allocated on page
+                        # boundries, so copy just the bytes we need for the array
+                        buffer = bytearray(num_bytes)
+                        buffer[:] = shm.buf[:num_bytes]
+                        shm.close()  # done with the shared memory block
+                        shm.unlink()
+                        arr1d = bytesToArray(buffer, mtype, page_mshape)
                         page_arr = numpy.reshape(arr1d, page_mshape)
                     else:
                         # got JSON response
