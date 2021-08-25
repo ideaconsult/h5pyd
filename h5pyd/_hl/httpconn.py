@@ -15,6 +15,7 @@ from __future__ import absolute_import
 import os
 import sys
 import multiprocessing
+from multiprocessing import shared_memory
 import base64
 import requests
 import requests_unixsocket
@@ -156,7 +157,7 @@ class HttpConn:
     TBD: Should refactor these to a common base class
     """
     def __init__(self, domain_name, endpoint=None, username=None, password=None, bucket=None,
-            api_key=None, mode='a', use_session=True, use_cache=True, logger=None, retries=3, **kwds):
+            api_key=None, mode='a', use_session=True, use_cache=True, use_shared_mem=None, logger=None, retries=3, **kwds):
         self._domain = domain_name
         self._mode = mode
         self._domain_json = None
@@ -164,6 +165,8 @@ class HttpConn:
         self._retries = 1  # for testing retries
         self._hsds = None
         self._lambda = None
+        self._use_shared_mem = use_shared_mem
+        self._shm_block = None
         if use_cache:
             self._cache = {}
             self._objdb = {}
@@ -601,6 +604,10 @@ class HttpConn:
         if self._hsds:
             self._hsds.stop()
             self._hsds = None
+        if self._shm_block:
+            self._shm_block.close()
+            self._shm_block.unlink()
+            self._shm_block = None
 
     @property
     def domain(self):
@@ -628,6 +635,39 @@ class HttpConn:
             return False
         else:
             return True
+
+    @property
+    def use_shared_mem(self):
+        if self._use_shared_mem is None:
+            if self._endpoint.startswith("http+unix"):
+                return True
+            else:
+                return False
+        else:
+            return self._use_shared_mem
+
+    def get_shm_buffer(self, min_size=None):
+        if not self.use_shared_mem:
+            return None
+        if self._shm_block and (min_size is None or self._shm_block.size >= min_size):
+            # just return existing shared memory block
+            print(f"returing shm_block - size: {self._shm_block.size}")
+            return self._shm_block.buf
+        # Free exiting block if any
+        if self._shm_block:
+            self._shm_block.close()
+            self._shm_block.unlink()
+            self._shm_block = None
+        print(f"allocating shm block - size: {min_size}")
+        self._shm_block = shared_memory.SharedMemory(create=True, size=min_size)
+        return self._shm_block.buf
+
+    @property
+    def shm_buffer_name(self):
+        if not self._shm_block:
+            return None
+        else:
+            return self._shm_block.name  
 
     @property
     def domain_json(self):

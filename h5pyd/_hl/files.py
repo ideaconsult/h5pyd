@@ -105,7 +105,7 @@ class File(Group):
         return self._limits
 
     def __init__(self, domain, mode=None, endpoint=None, username=None, password=None, bucket=None,
-        api_key=None, use_session=True, use_cache=True, logger=None, owner=None, linked_domain=None, retries=10, **kwds):
+        api_key=None, use_session=True, use_cache=True, use_shared_mem=None, logger=None, owner=None, linked_domain=None, retries=10, **kwds):
         """Create a new file object.
 
         See the h5py user guide for a detailed explanation of the options.
@@ -214,13 +214,14 @@ class File(Group):
 
             http_conn = HttpConn(domain, endpoint=endpoint,
                     username=username, password=password, bucket=bucket, mode=mode,
-                    api_key=api_key, use_session=use_session, use_cache=use_cache, logger=logger, retries=retries)
+                    api_key=api_key, use_session=use_session, use_cache=use_cache, use_shared_mem=use_shared_mem, logger=logger, retries=retries)
 
             root_json = None
 
             # try to do a GET from the domain
             req = "/"
             params = {"getdnids": 1} # return dn ids if available
+
             if use_cache and mode == 'r':
                 params["getobjs"] = "T"
                 params["include_attrs"] = "T"

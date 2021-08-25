@@ -17,10 +17,9 @@ from copy import copy
 import sys
 import time
 import base64
-from multiprocessing import shared_memory
 import numpy
 
-from .base import HLObject, jsonToArray, bytesToArray, arrayToBytes, Empty
+from .base import HLObject, jsonToArray, bytesToArray, arrayToBytes, getNumElements, Empty
 from .h5type import Reference, RegionReference
 from .base import  _decode
 from .objectid import DatasetID
@@ -803,19 +802,18 @@ class Dataset(HLObject):
             arr = numpy.empty(mshape, dtype=mtype)
             params = {}
             endpoint = self.id.http_conn.endpoint
-            if endpoint.startswith("http+unix"):
-                params["use_shared_mem"] = 1
+            
             if self.id._http_conn.mode == 'r' and self.id._http_conn.cache_on:
                 # enables lambda to be used on server
                 self.log.debug("setting nonstrict parameter")
                 params["nonstrict"] = 1
             else:
                 self.log.debug("not settng nonstrict")
-            done = False
 
+            done = False
             while not done:
                 num_rows = chunks_per_page * chunk_layout[split_dim]
-                self.log.debug("num_rows: {}".format(num_rows))
+                self.log.debug(f"num_rows: {num_rows}")
                 page_start = list(copy(sel_start))
 
                 num_pages = max_chunks // chunks_per_page
@@ -849,6 +847,24 @@ class Dataset(HLObject):
                     page_mshape = tuple(page_mshape)
                     self.log.info("page_mshape: {}".format(page_mshape))
 
+                    
+                    # This could turn  out to be too small for varible length types
+                    # Will get an EntityTooSmall error from HSDS in that case
+                    num_bytes = getNumElements(page_mshape) * mtype.itemsize
+                    print(f"num_bytes: {num_bytes}")
+                    MIN_SHARED_MEM_SIZE = 1024*1024  # 1 MB
+                    MAX_SHARED_MEM_SIZE = 1024*1024*100 # 100 MB
+                    if self.id._http_conn.use_shared_mem and num_bytes >= MIN_SHARED_MEM_SIZE and num_bytes <= MAX_SHARED_MEM_SIZE:
+                        self.id._http_conn.get_shm_buffer(min_size=num_bytes)
+                        shm_name = self.id._http_conn.shm_buffer_name
+                    else:
+                        shm_name = None
+
+                    if shm_name:
+                        params["shm_name"] = shm_name
+                    elif "shm_name" in params:
+                        del params["shm_name"]
+
                     params["select"] = self._getQueryParam(page_start, page_stop, sel_step)
                     try:
                         rsp = self.GET(req, params=params, format="binary")
@@ -869,20 +885,18 @@ class Dataset(HLObject):
                         page_arr = numpy.reshape(arr1d, page_mshape)
                     elif "shm_name" in rsp:
                         # passed a shared memory object
-                        shm_name = rsp["shm_name"]
-                        self.log.info(f"got shared memory object: {shm_name}")
+                        if rsp["shm_name"] != self.id._http_conn.shm_buffer_name:
+                            # not the object we expected to get!
+                            raise IOError("Unexpected shared memory block returned")
+                        self.log.info(f"getting data via shared memory object: {rsp['shm_name']}")
                         num_bytes = rsp["num_bytes"]
-                        try:
-                            shm = shared_memory.SharedMemory(name=shm_name)
-                        except FileNotFoundError:
-                            raise IOError("unable to access shared memory block")
+                        
                         # shared memory block is generally allocated on page
                         # boundries, so copy just the bytes we need for the array
-                        buffer = bytearray(num_bytes)
-                        buffer[:] = shm.buf[:num_bytes]
-                        shm.close()  # done with the shared memory block
-                        shm.unlink()
-                        arr1d = bytesToArray(buffer, mtype, page_mshape)
+                        des = bytearray(num_bytes)
+                        src = self.id._http_conn.get_shm_buffer()
+                        des[:] = src[:num_bytes]
+                        arr1d = bytesToArray(des, mtype, page_mshape)
                         page_arr = numpy.reshape(arr1d, page_mshape)
                     else:
                         # got JSON response
@@ -1003,6 +1017,7 @@ class Dataset(HLObject):
             arr = numpy.asscalar(arr)
         elif single_element:
             arr = arr[0]
+         
         #elif len(arr.shape) > 1:
         #    arr = numpy.squeeze(arr)  # reduce dimension if there are single dimension entries
         return arr
