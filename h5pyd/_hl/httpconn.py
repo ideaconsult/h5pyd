@@ -15,7 +15,10 @@ from __future__ import absolute_import
 import os
 import sys
 import multiprocessing
-from multiprocessing import shared_memory
+try:
+    from multiprocessing import shared_memory
+except ImportError:
+    pass  # only supported with python 3.8 or greater
 import base64
 import requests
 import requests_unixsocket
@@ -649,6 +652,8 @@ class HttpConn:
     def get_shm_buffer(self, min_size=None):
         if not self.use_shared_mem:
             return None
+        if sys.version_info.major != 3 or sys.version_info.minor < 8:
+            return None  # need at least python 3.8
         if self._shm_block and (min_size is None or self._shm_block.size >= min_size):
             # just return existing shared memory block
             print(f"returing shm_block - size: {self._shm_block.size}")
