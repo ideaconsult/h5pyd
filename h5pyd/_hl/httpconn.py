@@ -572,7 +572,7 @@ class HttpConn:
         retries=self._retries
         backoff_factor=1
         status_forcelist=(500, 502, 503, 504)
-        method_whitelist = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]  # include POST retries
+        allowed_methods = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]  # include POST retries
         if self._use_session:
             if self._s is None:
                 if self._endpoint.startswith("http+unix://"):
@@ -590,7 +590,7 @@ class HttpConn:
                     connect=retries,
                     backoff_factor=backoff_factor,
                     status_forcelist=status_forcelist,
-                    method_whitelist=method_whitelist
+                    allowed_methods=allowed_methods
                 )
              
                 s.mount('http://', TimeoutHTTPAdapter(max_retries=retry))
