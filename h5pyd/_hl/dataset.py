@@ -806,7 +806,6 @@ class Dataset(HLObject):
 
             arr = numpy.empty(mshape, dtype=mtype)
             params = {}
-            endpoint = self.id.http_conn.endpoint
             
             if self.id._http_conn.mode == 'r' and self.id._http_conn.cache_on:
                 # enables lambda to be used on server

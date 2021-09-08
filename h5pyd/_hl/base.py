@@ -16,7 +16,6 @@ import posixpath
 import os
 import six
 import json
-import base64
 import numpy as np
 import logging
 import logging.handlers
@@ -25,7 +24,6 @@ from collections.abc import (
 )
 from .objectid import GroupID
 from .h5type import Reference, check_dtype
-from .config import Config
 
 numpy_integer_types = (np.int8, np.uint8, np.int16, np.int16, np.int32, np.uint32, np.int64, np.uint64)
 numpy_float_types = (np.float16, np.float32, np.float64)
@@ -485,10 +483,6 @@ Create numpy array based on byte representation
 def bytesToArray(data, dt, shape):
     nelements = getNumElements(shape)
     
-    if len(dt) > 0:
-        names = dt.names
-        for name in names:
-            dt_sub = dt[name]
     if not isVlen(dt):
         # regular numpy from string
         arr = np.frombuffer(data, dtype=dt)
