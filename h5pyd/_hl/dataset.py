@@ -683,19 +683,19 @@ class Dataset(HLObject):
         # === Scalar dataspaces =================
 
         if self._shape == ():
-            #fspace = self.id.get_space()
-            #selection = sel2.select_read(fspace, args)
             selection = sel.select(self, args)
             self.log.info("selection.mshape: {}".format(selection.mshape))
 
             # TBD - refactor the following with the code for the non-scalar case
             req = "/datasets/" + self.id.uuid + "/value"
             rsp = self.GET(req, format="binary")
+            
             if type(rsp) is bytes:
                 # got binary response
                 self.log.info("got binary response for scalar selection")
-                arr = numpy.frombuffer(rsp, dtype=new_dtype)
-                #arr = bytesToArray(rsp, new_dtype, self._shape)
+                # arr = numpy.frombuffer(rsp, dtype=new_dtype)
+                arr= bytesToArray(rsp, new_dtype, self._shape)
+
                 if not self.dtype.shape:
                     self.log.debug("reshape arr to: {}".format(self._shape))
                     arr = numpy.reshape(arr, self._shape)
@@ -716,7 +716,12 @@ class Dataset(HLObject):
                 arr[()] = data
             if selection.mshape is None:
                 self.log.info("return scalar selection of: {}, dtype: {}, shape: {}".format(arr, arr.dtype, arr.shape))
-                return arr[()]
+                val = arr[()]
+                if isinstance(val, str):
+                    # h5py always returns bytes, so encode the str
+                    # TBD: what about compound types containing strings?
+                    val = val.encode('utf-8')
+                return val
 
             return arr
 
@@ -851,7 +856,6 @@ class Dataset(HLObject):
                     # This could turn  out to be too small for varible length types
                     # Will get an EntityTooSmall error from HSDS in that case
                     num_bytes = getNumElements(page_mshape) * mtype.itemsize
-                    print(f"num_bytes: {num_bytes}")
                     MIN_SHARED_MEM_SIZE = 1024*1024  # 1 MB
                     MAX_SHARED_MEM_SIZE = 1024*1024*100 # 100 MB
                     if self.id._http_conn.use_shared_mem and num_bytes >= MIN_SHARED_MEM_SIZE and num_bytes <= MAX_SHARED_MEM_SIZE:

@@ -484,6 +484,7 @@ Create numpy array based on byte representation
 """
 def bytesToArray(data, dt, shape):
     nelements = getNumElements(shape)
+    
     if len(dt) > 0:
         names = dt.names
         for name in names:
@@ -496,7 +497,12 @@ def bytesToArray(data, dt, shape):
         offset = 0
         for index in range(nelements):
             offset = readElement(data, offset, arr, index, dt)
-    arr = arr.reshape(shape)
+    
+    if shape == () and dt.shape:
+        # special case for scalar array with array sub-type
+        arr = arr.reshape(dt.shape)
+    else:
+        arr = arr.reshape(shape)
     return arr
 
 
