@@ -193,8 +193,8 @@ class HttpConn:
             raise ValueError(msg)
     
         if endpoint.startswith("lambda:"):
-             # save lambda function name
-             self._lambda = endpoint[len("lambda:"):]
+            # save lambda function name
+            self._lambda = endpoint[len("lambda:"):]
 
         elif endpoint == "local":
             # create a local hsds server
@@ -206,12 +206,10 @@ class HttpConn:
    
             hsds = HsdsApp(username=username, password=password, dn_count=dn_count, logger=self.log)
             hsds.run()
-            import time
-            time.sleep(2)
             self._hsds = hsds
             # replace 'local' with the socket path
             endpoint = hsds.endpoint     
-            # print(f"got hsds endpoint: {endpoint} for 'local' connection") 
+            self.log.debug(f"got hsds endpoint: {endpoint} for 'local' connection") 
 
         self._endpoint = endpoint
 
@@ -277,11 +275,11 @@ class HttpConn:
 
     def __del__(self):
         if self._hsds:
-            # print('hsds stop')
+            self.log.debug('hsds stop')
             self._hsds.stop()
             self._hsds = None
         if self._s:
-            # print("close session")
+            self.log.debug("close session")
             self._s.close()
             self._s = None
 
@@ -308,8 +306,6 @@ class HttpConn:
             # Token was provided as a string.
             elif isinstance(self._api_key, str):
                 token = self._api_key     
-
-            # print(token)       
 
             if token:
                 auth_string = b"Bearer " + token.encode('ascii')
@@ -366,7 +362,7 @@ class HttpConn:
             params["bucket"] = self._bucket
         if self._api_key and not isinstance(self._api_key, dict):
             params["api_key"] = self._api_key
-        #print("GET: {} [{}] bucket: {}".format(req, params["domain"], self._bucket))
+        self.log.debug("GET: {} [{}] bucket: {}".format(req, params["domain"], self._bucket))
 
         if format == "binary":
             headers['accept'] = 'application/octet-stream'
@@ -576,7 +572,7 @@ class HttpConn:
         if self._use_session:
             if self._s is None:
                 if self._endpoint.startswith("http+unix://"):
-                    #print("create unixsocket session")
+                    self.log.debug("create unixsocket session")
                     s = requests_unixsocket.Session()
                 elif self._endpoint.startswith("http+lambda://"):
                     s = requests_lambda.Session()
@@ -656,14 +652,14 @@ class HttpConn:
             return None  # need at least python 3.8
         if self._shm_block and (min_size is None or self._shm_block.size >= min_size):
             # just return existing shared memory block
-            print(f"returing shm_block - size: {self._shm_block.size}")
+            self.log.debug(f"returing shm_block - size: {self._shm_block.size}")
             return self._shm_block.buf
         # Free exiting block if any
         if self._shm_block:
             self._shm_block.close()
             self._shm_block.unlink()
             self._shm_block = None
-        print(f"allocating shm block - size: {min_size}")
+        self.log.debug(f"allocating shm block - size: {min_size}")
         self._shm_block = shared_memory.SharedMemory(create=True, size=min_size)
         return self._shm_block.buf
 
