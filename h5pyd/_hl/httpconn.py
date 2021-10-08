@@ -170,6 +170,8 @@ class HttpConn:
         self._lambda = None
         self._use_shared_mem = use_shared_mem
         self._shm_block = None
+        self._api_key = api_key
+        self._s = None  # Sessions
         if use_cache:
             self._cache = {}
             self._objdb = {}
@@ -269,9 +271,6 @@ class HttpConn:
                 api_key = openid.KeycloakOpenID(endpoint, config=api_key, username=username, password=password)
             else:
                 self.log.error("Unknown openid provider: {}".format(provider))
-
-        self._api_key = api_key
-        self._s = None  # Sessions
 
     def __del__(self):
         if self._hsds:
@@ -446,7 +445,7 @@ class HttpConn:
 
         headers = self.getHeaders(headers=headers)
 
-        if format=="binary":
+        if format == "binary":
             headers['Content-Type'] = "application/octet-stream"
             # binary write
             data = body
@@ -455,9 +454,13 @@ class HttpConn:
         self.log.info("PUT: {} format: {} [{} bytes]".format(req, format, len(data)))
        
         try:
+            if self._hsds:
+                self._hsds.run()
             s = self.session
             rsp = s.put(self._endpoint + req, data=data, headers=headers, params=params, verify=self.verifyCert())
             self.log.info("status: {}".format(rsp.status_code))
+            if self._hsds:
+                self._hsds.run()
         except ConnectionError as ce:
             self.log.error("connection error: {}".format(ce))
             raise IOError("Connection Error")

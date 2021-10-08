@@ -124,8 +124,6 @@ class ObjectID:
         self._old_uuid = self._uuid  # for debugging
         self._uuid = 0
         self._obj_json = None
-        if self._http_conn:
-            self._http_conn.close()
         self._http_conn = None
 
     def __bool__(self):
