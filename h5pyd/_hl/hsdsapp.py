@@ -53,8 +53,9 @@ class HsdsApp:
         # create a random dirname
         tmp_dir = "/tmp"  # TBD: will this work on windows?
         rand_name = uuid.uuid4().hex[:8]
-        self._socket_dir = f"{tmp_dir}/hs{rand_name}/"  # TBD: use temp dir
+        socket_dir = f"{tmp_dir}/hs{rand_name}/"  # TBD: use temp dir
         self._dn_urls = []
+        self._socket_paths = []
         self._processes = []
         self._queues = []
         self._threads = []
@@ -68,26 +69,30 @@ class HsdsApp:
         else:
             self.log = logger
 
-        os.mkdir(self._socket_dir)
+        os.mkdir(socket_dir)
 
-        self.log.debug(f"HsdsApp init - Using socketdir: {self._socket_dir}")
+        self.log.debug(f"HsdsApp init - Using socketdir: {socket_dir}")
 
         # url-encode any slashed in the socket dir
         socket_url = ""
-        for ch in self._socket_dir:
+        for ch in socket_dir:
             if ch == '/':
                 socket_url += "%2F"
             else:
                 socket_url += ch
 
         for i in range(dn_count):
-            dn_url = f"http+unix://{socket_url}dn_{(i+1)}.sock"
+            socket_name = f"dn_{(i+1)}.sock"
+            dn_url = f"http+unix://{socket_url}{socket_name}"
             self._dn_urls.append(dn_url)
+            self._socket_paths.append(f"{socket_dir}{socket_name}")
 
         # sort the ports so that node_number can be determined based on dn_url
         self._dn_urls.sort()
         self._endpoint = f"http+unix://{socket_url}sn_1.sock"
+        self._socket_paths.append(f"{socket_dir}sn_1.sock")
         self._rangeget_url = f"http+unix://{socket_url}rangeget.sock"
+        self._socket_paths.append(f"{socket_dir}rangeget.sock")
 
 
     @property
@@ -191,22 +196,12 @@ class HsdsApp:
 
         # wait to sockets are initialized
         start_ts = time.time()
-        socket_paths = []
-        for i in range(count):
-            socket_path = f"{self._socket_dir}dn_{i+1}.sock"
-            socket_paths.append(socket_path)
-        # sn and rangeget socket paths
-        socket_path = f"{self._socket_dir}sn_1.sock"
-        socket_paths.append(socket_path)
-        socket_path = f"{self._socket_dir}rangeget.sock"
-        socket_paths.append(socket_path)
-
         SLEEP_TIME = 0.1  # time to sleep between checking on socket connection
         MAX_INIT_TIME = 10.0  # max time to wait for socket to be initialized
 
         while True:
             ready = 0
-            for socket_path in socket_paths:
+            for socket_path in self._socket_paths:
                 if os.path.exists(socket_path):
                     ready += 1
             if ready == count:
@@ -216,8 +211,8 @@ class HsdsApp:
                 self.log.debug(f"{ready}/{count} ready")
                 self.log.debug(f"sleeping for {SLEEP_TIME}")
                 time.sleep(SLEEP_TIME)
-                if time.time() > start_ts + 10.0:
-                    msg = f"faield to initialize after {MAX_INIT_TIME} seconds"
+                if time.time() > start_ts + MAX_INIT_TIME:
+                    msg = f"failed to initialize after {MAX_INIT_TIME} seconds"
                     self.log.error(msg)
                     raise IOError(msg)
                 
@@ -234,17 +229,26 @@ class HsdsApp:
             logging.info(f"sending SIGINT to {p.args[0]}")
             p.send_signal(signal.SIGINT)
         # wait for sub-proccesses to exit
-        # wait for up to 2 seconds -- 20 * 0.1
-        for i in range(20):
+        SLEEP_TIME = 0.1  # time to sleep between checking on process state
+        MAX_WAIT_TIME = 10.0  # max time to wait for sub-process to terminate
+        start_ts = time.time()
+        while True:
             is_alive = False
             for p in self._processes:
                 if p.poll() is None:
                     is_alive = True
             if is_alive:
-                logging.debug("still alive, sleep 0.1")
-                time.sleep(0.1)
+                logging.debug(f"still alive, sleep {SLEEP_TIME}")
+                time.sleep(SLEEP_TIME)
+            else:
+                logging.debug("all subprocesses exited")
+                break
+            if time.time() > start_ts + MAX_WAIT_TIME:
+                msg = f"failed to terminate after {MAX_WAIT_TIME} seconds"
+                self.log.error(msg)
+                break
 
-        # kill any reluctant to die processes        
+        # kill any reluctant to die processes
         for p in self._processes:
             if p.poll():
                 logging.info(f"terminating {p.args[0]}")

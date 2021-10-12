@@ -640,13 +640,21 @@ class HttpConn:
 
     @property
     def use_shared_mem(self):
-        if self._use_shared_mem is None:
+        if self._use_shared_mem:
+            return True
+        else: 
+            return False
+        
+        # TBD: use shared mem for socket connections?
+        """
+        is None or not 
             if self._endpoint.startswith("http+unix"):
                 return True
             else:
                 return False
         else:
             return self._use_shared_mem
+        """
 
     def get_shm_buffer(self, min_size=None):
         if not self.use_shared_mem:
