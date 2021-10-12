@@ -97,9 +97,12 @@ def getServerInfo(cfg):
         print("username: {} {}".format(info["username"], admin_tag))
         print("password: {}".format(info["password"]))
         if info['state'] == "READY":
-            home_folder = getHomeFolder()
-            if home_folder:
-                print("home: {}".format(home_folder))
+            try:
+                home_folder = getHomeFolder()
+                if home_folder:
+                    print("home: {}".format(home_folder))
+            except IOError:
+                print("home: NO ACCESS",)
 
         if "hsds_version" in info:
             print("server version: {}".format(info["hsds_version"]))
