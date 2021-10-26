@@ -155,6 +155,9 @@ class TestDimensionScale(TestCase):
         labels = ('x', 'y', 'z')
         for i in range(3):
             dimscale = dset.dims[i]
+            for _, s in dimscale.items():
+                self.assertTrue(h5py.h5ds.is_scale(s.id))
+                self.assertTrue(h5py.h5ds.is_attached(dset.id, s.id, i))
             self.assertTrue(dimscale.label, labels[i])
             if i == 1:
                 self.assertEqual(len(dimscale), 0)
