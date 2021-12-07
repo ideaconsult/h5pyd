@@ -90,8 +90,8 @@ Advanced topics
     refs
 
 
-Meta-info about the h5py project
---------------------------------
+Meta-info about the h5pyd project
+---------------------------------
 
 .. toctree::
     :maxdepth: 1
