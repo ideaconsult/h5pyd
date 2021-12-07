@@ -1,14 +1,25 @@
-HDF5 RESTful API for Python
-===========================
+Python Client Library for HDF5 REST interface
+=============================================
 
-The h5pyd package is a Pythonic interface to the HDF5 RESTful application
-programming interface (API).
+The h5pyd package is modeled after `h5py <https://github.com/h5py/h5py>` and provides
+a largely compatible interface -- most codes developed using h5py should be able to use h5pyd
+with minor modifications -- but rather than a wrapper for the HDF5 library, it is a client library
+for the `HDF REST interface <https://github.com/HDFGroup/hdf-rest-api>`.  Being able to access HDF data via
+a web api can be useful in a variety of ways: providing remote data access, distributed applications, 
+utilizing object-based storage (e.g. AWS S3, Azure Blob storage), and many other situations where having to 
+setup access to HDF5 files on disk would be impractical.
 
-`HDF5 <https://www.hdfgroup.org/solutions/hdf5/>`_ lets you store huge amounts
-of numerical data, and easily manipulate that data from NumPy. For example, you
-can slice into multi-terabyte datasets, as if they were real NumPy arrays.
-Thousands of datasets can be stored in a single file object, categorized and
-tagged however you want.
+The h5pyd package can be used with the following services:
+
+* `h5serv: <https://github.com/HDFGroup/h5serv>` (DEPRECATED)
+* `hsds: <https://github.com/HDFGroup/hsds>` - container-based service for Docker and Kubernetes
+* `hslambda: <https://github.com/HDFGroup/hsds/blob/master/docs/aws_lambda_setup.md>` - Serverless implementation using AWS Lambda
+* `hsdirect: <https:/github.com/HDFGroup/tbd>` - direct access to posix or object-storage
+
+Since the server is abstracted behind a http-interface, and service that implements the HDF REST API could be
+used as well.
+
+The h5pyd package also includes a set of command line tools (CLI tools) for managing remote data as well.  See: :ref:`apps`
 
 
 Where to start
@@ -43,11 +54,28 @@ High-level API reference
     :maxdepth: 1
 
     high/file
+    high/folder
     high/group
     high/dataset
     high/attr
     high/dims
-    high/lowlevel
+    high/table
+
+CLI tools reference
+-------------------
+
+.. toctree::
+    :maxdepth: 1
+
+    apps/hsinfo
+    apps/hsls
+    apps/hsload
+    apps/hsget
+    apps/hstouch
+    apps/hsmv
+    apps/hscp
+    apps/hsdiff
+    apps/hsacl
 
 
 Advanced topics
@@ -60,9 +88,6 @@ Advanced topics
     special
     strings
     refs
-    mpi
-    swmr
-    vds
 
 
 Meta-info about the h5py project
@@ -75,4 +100,5 @@ Meta-info about the h5py project
     contributing
     release_guide
     faq
+    h5py_unsupported
     licenses
