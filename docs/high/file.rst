@@ -20,23 +20,23 @@ use.  However, there is obviously no concept of "text" vs "binary" mode.
 
     >>> f = h5pyd.File('/home/myhome/myfile.hdf5','r')
 
-The file path may be a byte string or unicode string. The path must start with a '/' (absolute path). 
+The file path may be a byte string or unicode string. The path must start with a '/' (absolute path).
 Valid modes are:
 
-    ========  ================================================
-     r        Readonly, file object must exist (default)
-     r+       Read/write, file object must exist
-     w        Create file object, reset if exists
-     w- or x  Create file object, fail if exists
-     a        Read/write if exists, create otherwise
-    ========  ================================================
+========  ================================================
+    r        Readonly, file object must exist (default)
+    r+       Read/write, file object must exist
+    w        Create file object, reset if exists
+w- or x      Create file object, fail if exists
+    a        Read/write if exists, create otherwise
+========  ================================================
 
-The file path do not correspond directly to posix file path, but is a resource location 
+The file path do not correspond directly to posix file path, but is a resource location
 relative to the parent path and ultimately to a storage location that is managed by the server.
 If the folder resource referenced by the parent path does not exist, an error will be raised.
 
 .. versionchanged:: 0.8.0
-   Files are now opened read-only by default. Earlier versions of h5py would
+   Files are now opened read-only by default. Earlier versions of h5pyd would
    pick different modes depending on the presence and permissions of the file.
 
 
@@ -45,9 +45,10 @@ If the folder resource referenced by the parent path does not exist, an error wi
 Authentication
 --------------
 
-Typically the server will be configured to verify the identity of the requestor - either
-by the requestor supplying a username/password combination (HTTP Basic Auth) or a OAuth-based bearer token.  If the
-identity of the requestor cannot be determined, an 401 - Unauthorized error will be raised.
+Typically the server will be configured to verify the identity of the requestor
+- either by the requestor supplying a username/password combination (HTTP Basic
+Auth) or an OAuth-based bearer token.  If the identity of the requestor cannot be
+determined, a ``401 - Unauthorized`` error will be raised.
 
 For username/password based authentication, there are three different means to supplying
 the credentials:
@@ -56,18 +57,18 @@ the credentials:
 2. Set the HS_USERNAME and HS_PASSWORD environment variables
 3. Set hs_username and hs_password keys in a file ".hscfg" in the client's home directory.
 
-Using username and password in the file parameters overrides the environment variables or 
+Using username and password in the file parameters overrides the environment variables or
 hscfg entries.  The `hsconfigure` app can be used to create/update the .hscfg file.
 
-Note: In "direct" mode, the username is not validated, but the username is still used for 
-for the authorization check.  See: :ref:`autorization`.
+Note: In "direct" mode, the username is not validated, but the username is still used for
+for the authorization check.  See: :ref:`authorization`.
 
 .. _authorization:
 
 Authorization
 -------------
 
-Even after the server has validated the supplied credentials, it may still be the case that 
+Even after the server has validated the supplied credentials, it may still be the case that
 the requesting user does not have permissions to open the file object in the give mode.
 Each file and folder resource on the server maintains a set of "Access Control Lists" (ACLs)
 that define what actions can be performed by a given user.
@@ -83,24 +84,24 @@ readACL: the ACLs  can be read
 updateACL: ACLs can be modified
 
 
-If no ACL is found for the given username that supports the requested mode, but an ACL 
-with the username 'default' exists, the default ACL is used.  
+If no ACL is found for the given username that supports the requested mode, but an ACL
+with the username 'default' exists, the default ACL is used.
 
 If no ACL is found, a 403-Forbidden
 error is raised.
 
-if an ACL is found, the operation is permitted if the corresponding ACL property is True, 
+if an ACL is found, the operation is permitted if the corresponding ACL property is True,
 otherwise a 403-Forbidden error is raised.
 
 For 'w' and 'a' modes, the parent folder must have an ACL with 'create' mode enabled.
 
-Finally, if the username is an admin user (as configured on the server), an action is allowed 
+Finally, if the username is an admin user (as configured on the server), an action is allowed
 (assuming the user's credentials are valid).
 
 The hsacl tool can be used to read and update acls.  See: hsacl TBD
 
 
-:: _concurrent:
+.. _concurrent:
 
 Concurrent Access
 -----------------
@@ -108,13 +109,13 @@ Concurrent Access
 It's possible for multiple clients to read and write to the same file resource simultaneously.
 The server enable storage to be updated in a consistent manner and no explict synchronization
 is needed on part of the clients.  Care should be taken though that multiple clients don't attempt
-update the same attribute, or modify the same dataset values, without some means of coordination as the result will 
+update the same attribute, or modify the same dataset values, without some means of coordination as the result will
 based on the last request to be processed by the server.
 
 Asynchronous properties
 -----------------------
 
-A number of file object properties are updated asynchrounously by the server.  
+A number of file object properties are updated asynchrounously by the server.
 Since the server may be a distributed system, and the amount of state for a given file
 can be arbitrary large, a property such as "num_objects" cannot be
 efficiently determined per request.  Instead the set of objects within a file are scanned
@@ -123,16 +124,17 @@ the value as of the last scan is returned.
 
 Example:
 
+.. code-block:: python
+
    f = h5pyd.File(a_file_path, 'w+')
    ts = f.last_scan
    f.create_group("a_new_group")
    while f.last_scan == ts:
        time.sleep(1) # wait for the server to re-scan file
-   print(f.num_objects)  # number of objects udpated
-    
+   print(f.num_objects)  # number of objects updated
+
 The asynchonous properties of the file object are labeled "async" below.
 
-  
 .. _endpoint:
 
 Endpoint
@@ -145,7 +147,7 @@ on the local machine access through port 5191.
 
 There are two special endpoints that are used for serverless access:
 
-The endpoint "local[*]" can be used for "direct" mode where server subprocesses are 
+The endpoint "local[*]" can be used for "direct" mode where server subprocesses are
 created on the local machine.  when the file is opened.  See "direct access" TBD.
 
 The endpoint "hslambda" can be used to invoke AWS Lambda implementation.  See "hslambda" TBD.
@@ -178,16 +180,15 @@ Closing files
 If you call :meth:`File.close`, or leave a ``with h5pyd.File(...)`` block,
 the file object will be closed and the file object will become unusable.  The
 connection to the server will only be closed by any object (dataset, group, etc) that
-refrences the object is out of scope.    
+refrences the object is out of scope.
 
 
-.. code-block::
+.. code-block:: python
 
     with h5pyd.File('/shared/tall.h5') as f1:
         ds = f1['/g1/g1.1/dset.1.1']
 
-    # OK - ds still maintains a connection to the server
-    ds[0]
+    ds[0]  # OK - ds still maintains a connection to the server
 
     del ds  # Now the server connection will be closed
 
@@ -206,7 +207,7 @@ h5pyd always return filenames as ``str``, e.g.
 In most cases, using Unicode (``str``) paths is preferred.
 
 Unlike with h5py, there are no OS-dependent differences.
- 
+
 .. _file_cache:
 
 Chunk cache
@@ -219,19 +220,17 @@ possible those chunks are cached in memory, so that if a client requests a
 different part of a chunk that has already been read, the data can be copied
 directly from memory rather than reading from storage again.  The details of a
 given dataset's chunks are controlled when creating the dataset.  The size of
-the chunk cache depends on the server configuration, see the server documentatin 
-for details.  
+the chunk cache depends on the server configuration, see the server documentatin
+for details.
 
-Currently, h5pyd does not provide any local cache for chunk data.  Typically, 
-it will be more effience to read relatively large portions of the dataset than 
+Currently, h5pyd does not provide any local cache for chunk data.  Typically,
+it will be more effience to read relatively large portions of the dataset than
 to make many smaller requests to the server.
-    
 
 Reference
 ---------
 
-
-.. class:: File(name, mode=None, endpoint=None, usernamer=None, \
+.. class:: File(name, mode=None, endpoint=None, username=None, \
     password=None, bucket=None, api_key=None, use_session=True, \
     use_cache=True, use_shared_memr=None, owner=None, linked_domain=None, \
     retries=10, **kwds)
@@ -246,13 +245,13 @@ Reference
                     ("w", "r", "r+", "a", "w-").  See :ref:`file_open`.
     :param endpoint:  Endpoint to be used; see :ref:`endpoint`.
     :param username:  Username; see :ref:`authentication`.
-    :param password:  Password for given user; see :ref: `authentication`
-    :param bucket: Storage collection (e.g. AWS S3 bucket or Azure container) to be used.  If not provided the 
+    :param password:  Password for given user; see :ref:`authentication`
+    :param bucket: Storage collection (e.g. AWS S3 bucket or Azure container) to be used.  If not provided the
                 default configured on the server will be used.
-    :param api_key: Api Key to be used in lieu of username/password; see :ref: `authentication`
-    :param use_session: Maintain an http connection as long as the file object 
+    :param api_key: Api Key to be used in lieu of username/password; see :ref:`authentication`
+    :param use_session: Maintain an http connection as long as the file object
                     is open.  Default to True.
-    :param use_cache: Cache metadata (links, attributes, dataset shape, etc.) so a new 
+    :param use_cache: Cache metadata (links, attributes, dataset shape, etc.) so a new
            server request is not needed each time an object is accesed.  Default is True.
            Use False if it's expected that value maybe changed by another client while
            the file object is opened.  See :ref:`concurrent` for more information.
@@ -261,8 +260,8 @@ Reference
     :param logger: Use provided logger for log messages.  Default to None.
     :param owner: Assign the given value as owner for a new file object (rather than username).
             Requires that username be an admin user.
-    :param linked_domain: Create a new file object using the same root as the 
-            file object referenced by 'linked_domain'.  Basically creats an alias for the 
+    :param linked_domain: Create a new file object using the same root as the
+            file object referenced by 'linked_domain'.  Basically creats an alias for the
             same HDF root group.
     :param retries: If a request to the server fails (for instance the server is temporarily
             too busy to handle the request), retry the request by the given number of times.
@@ -301,10 +300,10 @@ Reference
         String indicating if the file is open readonly ("r") or read-write
         ("r+").  Will always be one of these two values, regardless of the
         mode used to open the file.
-    
-    .. attibute:: modified
 
-        Timestamp of the most recently modified object in the file object.  
+    .. attribute:: modified
+
+        Timestamp of the most recently modified object in the file object.
         May take a few seconds to be updated after an object has been updated.
 
     .. attribute:: num_objects
@@ -338,7 +337,7 @@ Reference
     .. attribute: linked_bytes
 
         Number of bytes used in linked chunks. (async)
-    
+
     .. attribute: total_size
 
         Total number of storage bytes used. (async)
@@ -351,7 +350,7 @@ Reference
     .. attribute: last_scan
 
         Timestamp of the last time asynchronous properties were updates (see :ref: _async_props)
-     
+
     .. attribute: compressors
 
         Return list of compressors supported by this server
@@ -362,16 +361,10 @@ Reference
 
     .. method: getACL(username)
 
-       Return the ACL for the given username.  Raises a 404-Not Found error if no ACL for 
+       Return the ACL for the given username.  Raises a 404-Not Found error if no ACL for
        the given user exists.
 
     .. method: putACL(acl)
 
-       Create a new ACL or modify an existing ACL for the fileobject.  See :ref: _authorization 
+       Create a new ACL or modify an existing ACL for the fileobject.  See :ref: _authorization
        for a description of the acl.
-
-
-
-
-    
-     
