@@ -1,29 +1,25 @@
-.. currentmodule:: h5py
+.. currentmodule:: h5pyd
 .. _group:
-
 
 Groups
 ======
 
-
-Groups are the container mechanism by which HDF5 files are organized.  From
-a Python perspective, they operate somewhat like dictionaries.  In this case
-the "keys" are the names of group members, and the "values" are the members
-themselves (:class:`Group` and :class:`Dataset`) objects.
+Groups provide the mechanism by which HDF5 file content is hierarchically
+organized. From a Python perspective, they operate somewhat like dictionaries.
+In this case the "keys" are the names of group members, and the "values" are the
+members themselves (:class:`Group` and :class:`Dataset`) objects.
 
 Group objects also contain most of the machinery which makes HDF5 useful.
 The :ref:`File object <file>` does double duty as the HDF5 *root group*, and
 serves as your entry point into the file:
 
-    >>> f = h5py.File('foo.hdf5','w')
+    >>> f = h5pyd.File('/home/myhome/foo.hdf5','w')
     >>> f.name
     '/'
     >>> list(f.keys())
     []
 
-Names of all objects in the file are all text strings (``str``).  These will be encoded with the HDF5-approved UTF-8
-encoding before being passed to the HDF5 C library.  Objects may also be
-retrieved using byte strings, which will be passed on to HDF5 as-is.
+Names of all objects in the file are text strings (``str``).
 
 
 .. _group_create:
@@ -55,31 +51,24 @@ Multiple intermediate groups can also be created implicitly::
 Dict interface and links
 ------------------------
 
-Groups implement a subset of the Python dictionary convention.  They have
-methods like ``keys()``, ``values()`` and support iteration.  Most importantly,
-they support the indexing syntax, and standard exceptions:
+h5pyd groups implement a subset of the Python dictionary convention.  They have
+methods like ``keys()`` and ``values()``, and support iteration.  Most importantly,
+they support the indexing syntax with standard exceptions:
 
     >>> myds = subgrp["MyDS"]
     >>> missing = subgrp["missing"]
     KeyError: "Name doesn't exist (Symbol table: Object not found)"
+
+.. todo::  Check the KeyError exception!
 
 Objects can be deleted from the file using the standard syntax::
 
     >>> del subgroup["MyDataset"]
 
 .. note::
-    When using h5py from Python 3, the keys(), values() and items() methods
+    In Python 3, the :meth:`Group.keys()`, :meth:`Group.values()` and :meth:`Group.items()` methods
     will return view-like objects instead of lists.  These objects support
     membership testing and iteration, but can't be sliced like lists.
-
-By default, objects inside group are iterated in alphanumeric order.
-However, if group is created with ``track_order=True``, the insertion
-order for the group is remembered (tracked) in HDF5 file, and group
-contents are iterated in that order.  The latter is consistent with
-Python 3.7+ dictionaries.
-
-The default ``track_order`` for all new groups can be specified
-globally with ``h5.get_config().track_order``.
 
 
 .. _group_hardlinks:
@@ -87,9 +76,9 @@ globally with ``h5.get_config().track_order``.
 Hard links
 ~~~~~~~~~~
 
-What happens when assigning an object to a name in the group?  It depends on
+What happens when assigning an HDF5 object to a name in the group?  It depends on
 the type of object being assigned.  For NumPy arrays or other data, the default
-is to create an :ref:`HDF5 datasets <dataset>`::
+is to create an :ref:`HDF5 dataset <dataset>`::
 
     >>> grp["name"] = 42
     >>> out = grp["name"]
@@ -103,7 +92,7 @@ made to the object::
     >>> grp["other name"]
     <HDF5 dataset "other name": shape (), type "<i8">
 
-Note that this is `not` a copy of the dataset!  Like hard links in a UNIX file
+Note that this is *not* a copy of the dataset!  Like hard links in a UNIX file
 system, objects in an HDF5 file can be stored in multiple groups::
 
     >>> grp["other name"] == grp["name"]
@@ -117,11 +106,11 @@ Soft links
 
 Also like a UNIX filesystem, HDF5 groups can contain "soft" or symbolic links,
 which contain a text path instead of a pointer to the object itself.  You
-can easily create these in h5py by using ``h5py.SoftLink``::
+can easily create these in h5pyd with :class:`h5pyd.SoftLink`::
 
-    >>> myfile = h5py.File('foo.hdf5','w')
+    >>> myfile = h5pyd.File('foo.hdf5','w')
     >>> group = myfile.create_group("somegroup")
-    >>> myfile["alias"] = h5py.SoftLink('/somegroup')
+    >>> myfile["alias"] = h5pyd.SoftLink('/somegroup')
 
 If the target is removed, they will "dangle":
 
@@ -129,40 +118,24 @@ If the target is removed, they will "dangle":
     >>> print(myfile['alias'])
     KeyError: 'Component not found (Symbol table: Object not found)'
 
+.. todo:: Verify KeyError message.
 
 .. _group_extlinks:
 
 External links
 ~~~~~~~~~~~~~~
 
-New in HDF5 1.8, external links are "soft links plus", which allow you to
-specify the name of the file as well as the path to the desired object.  You
-can refer to objects in any file you wish.  Use similar syntax as for soft
-links:
+External links are soft links that target an HDF5 object in another file, hence,
+they require both the file name and the path to the target object in that file.
+They have similar syntax as soft links:
 
-    >>> myfile = h5py.File('foo.hdf5','w')
-    >>> myfile['ext link'] = h5py.ExternalLink("otherfile.hdf5", "/path/to/resource")
+    >>> myfile = h5pyd.File('/home/myhome/foo.hdf5', 'w')
+    >>> myfile['ext link'] = h5pyd.ExternalLink("/home/myhome/otherfile.hdf5", "/path/to/resource")
 
-When the link is accessed, the file "otherfile.hdf5" is opened, and object at
-"/path/to/resource" is returned.
-
-Since the object retrieved is in a different file, its ".file" and ".parent"
-properties will refer to objects in that file, *not* the file in which the
-link resides.
-
-.. note::
-
-    Currently, you can't access an external link if the file it points to is
-    already open.  This is related to how HDF5 manages file permissions
-    internally.
-
-.. note::
-
-    The filename is stored in the file as bytes, normally UTF-8 encoded.
-    In most cases, this should work reliably, but problems are possible if a
-    file created on one platform is accessed on another. Older versions of HDF5
-    may have problems on Windows in particular. See :ref:`file_filenames` for
-    more details.
+When the external link is accessed, the file "/home/myhome/otherfile.hdf5" is
+opened and the HDF5 object at "/path/to/resource" is returned. Since the object
+retrieved is in a different file, its ``.file`` and ``.parent`` properties will
+refer to objects in that file, *not* the file in which the link resides.
 
 Reference
 ---------
@@ -171,14 +144,14 @@ Reference
 
     Generally Group objects are created by opening objects in the file, or
     by the method :meth:`Group.create_group`.  Call the constructor with
-    a :class:`GroupID <low:h5py.h5g.GroupID>` instance to create a new Group
+    a :class:`GroupID <h5pyd.objectid.GroupID>` instance to create a new Group
     bound to an existing low-level identifier.
 
     .. method:: __iter__()
 
-        Iterate over the names of objects directly attached to the group.
-        Use :meth:`Group.visit` or :meth:`Group.visititems` for recursive
-        access to group members.
+        Iterate over the names of the group's member objects (directly linked
+        to it). Use :meth:`Group.visit` or :meth:`Group.visititems` for
+        recursive access to all the objects accessible from this group.
 
     .. method:: __contains__(name)
 
@@ -201,7 +174,7 @@ Reference
         A group could be inaccessible for several reasons. For instance, the
         group, or the file it belongs to, may have been closed elsewhere.
 
-        >>> f = h5py.open(filename)
+        >>> f = h5pyd.open("/home/myhome/file.h5")
         >>> group = f["MyGroup"]
         >>> f.close()
         >>> if group:
@@ -212,9 +185,9 @@ Reference
 
     .. method:: keys()
 
-        Get the names of directly attached group members.
-        Use :meth:`Group.visit` or :meth:`Group.visititems` for recursive
-        access to group members.
+        Get the names of directly attached group members. Use
+        :meth:`Group.visit` or :meth:`Group.visititems` for recursive access to
+        all objects accessible from this group.
 
        :return: set-like object.
 
@@ -227,35 +200,34 @@ Reference
 
     .. method:: items()
 
-        Get ``(name, value)`` pairs for object directly attached to this group.
+        Get ``(name, object)`` pairs for objects linked to this group.
         Values for broken soft or external links show up as None.
 
         :return: a set-like object.
 
     .. method:: get(name, default=None, getclass=False, getlink=False)
 
-        Retrieve an item, or information about an item.  `name` and `default`
-        work like the standard Python ``dict.get``.
+        Retrieve an object, or information about an object.  `name` and
+        `default` work like the standard Python ``dict.get()``.
 
-        :param name:    Name of the object to retrieve.  May be a relative or
-                        absolute path.
+        :param name: Name of the object to retrieve.  May be a relative or
+                     absolute path.
         :param default: If the object isn't found, return this instead.
-        :param getclass:    If True, return the class of object instead;
-                            :class:`Group` or :class:`Dataset`.
+        :param getclass: If True, return the class of object instead;
+                         :class:`Group` or :class:`Dataset`.
         :param getlink: If true, return the type of link via a :class:`HardLink`,
                         :class:`SoftLink` or :class:`ExternalLink` instance.
-                        If ``getclass`` is also True, returns the corresponding
-                        Link class without instantiating it.
+                        Return "default" if nothing with that name exists.
 
     .. method:: visit(callable)
 
-        Recursively visit all objects in this group and subgroups.  You supply
+        Recursively visit all objects in this group and its subgroups.  You supply
         a callable with the signature::
 
             callable(name) -> None or return value
 
         `name` will be the name of the object relative to the current group.
-        Return None to continue visiting until all objects are exhausted.
+        Return ``None`` to continue visiting until all objects are exhausted.
         Returning anything else will immediately stop visiting and return
         that value from ``visit``::
 
@@ -266,58 +238,55 @@ Reference
             >>> group.visit(find_foo)
             'some/subgroup/foo'
 
-
     .. method:: visititems(callable)
 
-        Recursively visit all objects in this group and subgroups.  Like
+        Recursively visit all objects in this group and its subgroups. Like
         :meth:`Group.visit`, except your callable should have the signature::
 
-            callable(name, object) -> None or return value
+            callable(name, h5obj) -> None or return value
 
-        In this case `object` will be a :class:`Group` or :class:`Dataset`
+        In this case `h5obj` will be a :class:`Group` or :class:`Dataset`
         instance.
 
 
-    .. method:: move(source, dest)
+    .. .. method:: move(source, dest)
 
-        Move an object or link in the file.  If `source` is a hard link, this
-        effectively renames the object.  If a soft or external link, the
-        link itself is moved.
+    ..     Move an object or link in the file.  If `source` is a hard link, this
+    ..     effectively renames the object.  If a soft or external link, the
+    ..     link itself is moved.
 
-        :param source:  Name of object or link to move.
-        :type source:   String
-        :param dest:    New location for object or link.
-        :type dest:   String
-
-
-    .. method:: copy(source, dest, name=None, shallow=False, expand_soft=False, expand_external=False, expand_refs=False, without_attrs=False)
-
-        Copy an object or group.  The source and destination need not be in
-        the same file.  If the source is a Group object, by default all objects
-        within that group will be copied recursively.
-
-        :param source:  What to copy.  May be a path in the file or a Group/Dataset object.
-        :param dest:    Where to copy it.  May be a path or Group object.
-        :param name:    If the destination is a Group object, use this for the
-                        name of the copied object (default is basename).
-        :param shallow: Only copy immediate members of a group.
-        :param expand_soft: Expand soft links into new objects.
-        :param expand_external: Expand external links into new objects.
-        :param expand_refs: Copy objects which are pointed to by references.
-        :param without_attrs:   Copy object(s) without copying HDF5 attributes.
+    ..     :param source:  Name of object or link to move.
+    ..     :type source:   String
+    ..     :param dest:    New location for object or link.
+    ..     :type dest:   String
 
 
-    .. method:: create_group(name, track_order=None)
+    .. .. method:: copy(source, dest, name=None, shallow=False, expand_soft=False, expand_external=False, expand_refs=False, without_attrs=False)
 
-        Create and return a new group in the file.
+    ..     Copy an object or group.  The source and destination need not be in
+    ..     the same file.  If the source is a Group object, by default all objects
+    ..     within that group will be copied recursively.
+
+    ..     :param source:  What to copy.  May be a path in the file or a Group/Dataset object.
+    ..     :param dest:    Where to copy it.  May be a path or Group object.
+    ..     :param name:    If the destination is a Group object, use this for the
+    ..                     name of the copied object (default is basename).
+    ..     :param shallow: Only copy immediate members of a group.
+    ..     :param expand_soft: Expand soft links into new objects.
+    ..     :param expand_external: Expand external links into new objects.
+    ..     :param expand_refs: Copy objects which are pointed to by references.
+    ..     :param without_attrs:   Copy object(s) without copying HDF5 attributes.
+
+
+    .. method:: create_group(name)
+
+        Create and return a new group.
 
         :param name:    Name of group to create.  May be an absolute
-                        or relative path.  Provide None to create an anonymous
+                        or relative path. Fails if an object with the name
+                        already exists. Provide ``None`` to create an anonymous
                         group, to be linked into the file later.
-        :type name:     String or None
-        :param track_order:  Track dataset/group/attribute creation order under
-                        this group if ``True``.  Default is
-                        ``h5.get_config().track_order``.
+        :type name:     :class:`str` or ``None``
 
         :return:        The new :class:`Group` object.
 
@@ -325,7 +294,7 @@ Reference
     .. method:: require_group(name)
 
         Open a group in the file, creating it if it doesn't exist.
-        TypeError is raised if a conflicting object already exists.
+        ``TypeError`` is raised if a conflicting object already exists.
         Parameters as in :meth:`Group.create_group`.
 
 
@@ -334,118 +303,79 @@ Reference
         Create a new dataset.  Options are explained in :ref:`dataset_create`.
 
         :param name:    Name of dataset to create.  May be an absolute
-                        or relative path.  Provide None to create an anonymous
+                        or relative path.  Provide ``None`` to create an anonymous
                         dataset, to be linked into the file later.
 
-        :param shape:   Shape of new dataset (Tuple).
+        :param shape:   Shape of new dataset as a tuple. Use ``()`` for scalar
+                        datasets.  Required if `data` isn't provided.
 
-        :param dtype:   Data type for new dataset
+        :param dtype:   Numpy dtype or string. If omitted, ``dtype('f')`` will be used.
+                        Required if "data" isn't provided; otherwise, overrides data
+                        array's dtype.
 
-        :param data:    Initialize dataset to this (NumPy array).
+        :param data:    Initialize dataset to this (NumPy array). Can omit
+                        `shape` and `dtype` arguments if used.
 
-        :keyword chunks:    Chunk shape, or True to enable auto-chunking.
+        Keyword-only arguments:
 
-        :keyword maxshape:  Dataset will be resizable up to this shape (Tuple).
-                            Automatically enables chunking.  Use None for the
-                            axes you want to be unlimited.
+        :keyword chunks:    Chunk shape as a tuple, or ``True`` to enable
+                            auto-chunking.
+        :type chunks: :class:`tuple`
+
+        :keyword maxshape:  Dataset will be resizable up to this shape.
+                            Automatically enables chunking.  Use ``None`` for the
+                            dimensions you want to be unlimited.
+        :type maxshape: :class:`tuple` or ``None``
 
         :keyword compression:   Compression strategy.  See :ref:`dataset_compression`.
 
-        :keyword compression_opts:  Parameters for compression filter.
+        :keyword compression_opts:  Parameters for compression filter. See :ref:`dataset_compression`.
 
         :keyword scaleoffset:   See :ref:`dataset_scaleoffset`.
 
-        :keyword shuffle:   Enable shuffle filter (T/**F**).  See :ref:`dataset_shuffle`.
+        :keyword shuffle:   Enable shuffle filter. See :ref:`dataset_shuffle`.
 
-        :keyword fletcher32: Enable Fletcher32 checksum (T/**F**).  See :ref:`dataset_fletcher32`.
+        :keyword fillvalue: A scalar value that provided for every uninitialized
+                            dataset element.
 
-        :keyword fillvalue: This value will be used when reading
-                            uninitialized parts of the dataset.
+        :keyword track_times: Enable dataset creation timestamps. ``True``
+                              (default) or ``False``.
 
-        :keyword track_times: Enable dataset creation timestamps (**T**/F).
 
-        :keyword track_order: Track attribute creation order if
-                        ``True``.  Default is
-                        ``h5.get_config().track_order``.
-
-        :keyword external: Store the dataset in one or more external, non-HDF5
-            files. This should be an iterable (such as a list) of tuples of
-            ``(name, offset, size)`` to store data from ``offset`` to
-            ``offset + size`` in the named file. Each name must be a str,
-            bytes, or os.PathLike; each offset and size, an integer. The last
-            file in the sequence may have size ``h5py.h5f.UNLIMITED`` to let
-            it grow as needed. If only a name is given instead of an iterable
-            of tuples, it is equivalent to
-            ``[(name, 0, h5py.h5f.UNLIMITED)]``.
-        :keyword allow_unknown_filter: Do not check that the requested filter is
-            available for use (T/F). This should only be set if you will
-            write any data with ``write_direct_chunk``, compressing the
-            data before passing it to h5py.
-
-    .. method:: require_dataset(name, shape=None, dtype=None, exact=None, **kwds)
+    .. method:: require_dataset(name, shape=None, dtype=None, exact=False, **kwds)
 
         Open a dataset, creating it if it doesn't exist.
 
-        If keyword "exact" is False (default), an existing dataset must have
+        If keyword "exact" is ``False`` (default), an existing dataset must have
         the same shape and a conversion-compatible dtype to be returned.  If
-        True, the shape and dtype must match exactly.
+        ``True``, the shape and dtype must match exactly.
 
-        Other dataset keywords (see create_dataset) may be provided, but are
+        Other dataset keywords (see :meth:`create_dataset`) may be provided, but are
         only used if a new dataset is to be created.
 
-        Raises TypeError if an incompatible object already exists, or if the
+        Raises ``TypeError`` if an incompatible object already exists, or if the
         shape or dtype don't match according to the above rules.
 
-        :keyword exact:     Require shape and type to match exactly (T/**F**)
+        :keyword exact: Require shape and type to match exactly (T/**F**)
 
 
     .. method:: create_dataset_like(name, other, **kwds)
 
-        Create a dataset similar to `other`, much like numpy's `_like` functions.
+        Create a dataset similar to `other`.
 
         :param name:
-            Name of the dataset (absolute or relative).  Provide None to make
+            Name of the dataset (absolute or relative).  Provide ``None`` to make
             an anonymous dataset.
+        :type name: str or ``None``
         :param other:
             The dataset whom the new dataset should mimic. All properties, such
             as shape, dtype, chunking, ... will be taken from it, but no data
             or attributes are being copied.
+        :type other: :class:`Dataset`
 
-        Any dataset keywords (see create_dataset) may be provided, including
-        shape and dtype, in which case the provided values take precedence over
+        Any dataset keywords (see :meth:`create_dataset`) may be provided, including
+        `shape` and `dtype`, in which case the provided values take precedence over
         those from `other`.
-
-    .. method:: create_virtual_dataset(name, layout, fillvalue=None)
-
-       Create a new virtual dataset in this group. See :doc:`/vds` for more
-       details.
-
-       :param str name:
-           Name of the dataset (absolute or relative).
-       :param VirtualLayout layout:
-           Defines what source data fills which parts of the virtual dataset.
-       :param fillvalue:
-           The value to use where there is no data.
-
-    .. method:: build_virtual_dataset()
-
-       Assemble a virtual dataset in this group.
-
-       This is used as a context manager::
-
-           with f.build_virtual_dataset('virt', (10, 1000), np.uint32) as layout:
-               layout[0] = h5py.VirtualSource('foo.h5', 'data', (1000,))
-
-       Inside the context, you populate a :class:`VirtualLayout` object.
-       The file is only modified when you leave the context, and if there's
-       no error.
-
-       :param str name: Name of the dataset (absolute or relative)
-       :param tuple shape: Shape of the dataset
-       :param dtype: A numpy dtype for data read from the virtual dataset
-       :param tuple maxshape: Maximum dimensions if the dataset can grow
-           (optional). Use None for unlimited dimensions.
-       :param fillvalue: The value used where no data is available.
 
     .. attribute:: attrs
 
@@ -454,17 +384,17 @@ Reference
     .. attribute:: id
 
         The groups's low-level identifier; an instance of
-        :class:`GroupID <low:h5py.h5g.GroupID>`.
+        :class:`GroupID <h5pyd.objectid.GroupID>`.
 
     .. attribute:: ref
 
         An HDF5 object reference pointing to this group.  See
         :ref:`refs_object`.
 
-    .. attribute:: regionref
+    .. .. attribute:: regionref
 
-        A proxy object allowing you to interrogate region references.
-        See :ref:`refs_region`.
+    ..     A proxy object allowing you to interrogate region references.
+    ..     See :ref:`refs_region`.
 
     .. attribute:: name
 
@@ -477,6 +407,10 @@ Reference
     .. attribute:: parent
 
         :class:`Group` instance containing this group.
+
+    .. attribute:: modified
+
+        Last modified time as a `datetime.datetime` object.
 
 
 Link classes
@@ -494,7 +428,7 @@ Link classes
     they are not related in any way to a particular file.
 
     :param path:    Value of the soft link.
-    :type path:     String
+    :type path:     :class:`str`
 
     .. attribute:: path
 
@@ -506,10 +440,10 @@ Link classes
     path.  See :ref:`group_extlinks`.
 
     :param filename:    Name of the file to which the link points
-    :type filename:     String
+    :type filename:     :class:`str`
 
     :param path:        Path to the object in the external file.
-    :type path:         String
+    :type path:         :class:`str`
 
     .. attribute:: filename
 
