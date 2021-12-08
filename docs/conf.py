@@ -19,6 +19,7 @@ extensions = [
         'sphinx.ext.intersphinx',
         'sphinx.ext.extlinks',
         'sphinx.ext.mathjax',
+        'sphinx.ext.todo'
 ]
 
 # intersphinx_mapping = {'low': ('https://api.h5py.org', None)}
@@ -174,3 +175,15 @@ html_use_smartypants = False
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'h5pyddoc'
+
+# If this is True, todo and todolist produce output, else they produce nothing.
+# The default is False.
+todo_include_todos = True
+
+# If this is True, todo emits a warning for each TODO entries. The default is
+# False.
+todo_emit_warnings = False
+
+# If this is True, todolist produce output without file path and line, The
+# default is False.
+todo_link_only = False
