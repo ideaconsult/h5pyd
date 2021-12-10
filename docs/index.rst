@@ -1,54 +1,57 @@
-Python Client Library for HDF5 REST interface
+.. caution::
+
+    This documentation is work in progress and mistakes or incosistencies are possible. Please report them at https://github.com/HDFGroup/h5pyd. Pull requests are even better!
+
+
+Python Client Library for HDF5 REST Interface
 =============================================
 
-The h5pyd package is modeled after `h5py <https://github.com/h5py/h5py>`_ and provides
-a largely compatible interface -- most codes developed using h5py should be able to use h5pyd
-with minor modifications -- but rather than a wrapper for the HDF5 library, it is a client library
-for the `HDF REST interface <https://github.com/HDFGroup/hdf-rest-api>`_.  Being able to access HDF data via
-a web API can be useful in a variety of ways: providing remote data access, distributed applications,
-utilizing object-based storage (e.g. AWS S3, Azure Blob storage), and many other situations where having to
-setup access to HDF5 files on disk would be impractical.
+.. admonition:: Special Acknowledgment
 
-The h5pyd package can be used with the following services:
+    h5pyd package is modeled after `h5py <https://docs.h5py.org>`_ and this documentation was started from h5py's.
 
-* `h5serv <https://github.com/HDFGroup/h5serv>`_ (DEPRECATED)
+    h5pyd developers express their gratitude to the h5py project for developing so functional API and great documentation.
+
+The h5pyd package is a client library for the `HDF REST interface
+<https://github.com/HDFGroup/hdf-rest-api>`_. It represents an alternative to
+the HDF5 library when paired with the following services:
+
 * `hsds <https://github.com/HDFGroup/hsds>`_ - container-based service for Docker and Kubernetes
 * `hslambda <https://github.com/HDFGroup/hsds/blob/master/docs/aws_lambda_setup.md>`_ - Serverless implementation using AWS Lambda
-* `hsdirect <https:/github.com/HDFGroup/tbd>`_ - direct access to posix or object-storage
+* `hsdirect <https:/github.com/HDFGroup/tbd>`_ - direct access to POSIX file systems or object storage
+* `h5serv <https://github.com/HDFGroup/h5serv>`_ **(DEPRECATED)**
 
-Since the server is abstracted behind a http-interface, and service that implements the HDF REST API could be
-used as well.
+However, any web service that implements the HDF REST API could be used as well.
 
-The h5pyd package also includes a set of command line tools (CLI tools) for managing remote data as well.  See: :ref:`apps`
+Being able to access HDF data via a web API can be useful in a variety of ways:
+providing remote data access, distributed applications, utilizing object-based
+storage (e.g. AWS S3, Azure Blob storage), and many other situations where
+having to setup file system access to HDF5 data would be impractical.
+
+Software developed using h5py should be able to use h5pyd with no or only minor
+modifications.
+
+The h5pyd package also includes a set of command line tools (CLI tools) for
+managing remote data. See :ref:`cli_docs`.
 
 
-Where to start
+Where to Start
 --------------
 
 * :ref:`Quick-start guide <quick>`
 * :ref:`Installation <install>`
 
 
-Other resources
+Other Resources
 ---------------
 
-* `GitHub project <https://github.com/HDFGroup/h5pyd>`_
-* `Ask questions on the HDF Group Forum at <https://forum.hdfgroup.org/c/hsds>`_
-* `Python and HDF5 O'Reilly book <https://shop.oreilly.com/product/0636920030249.do>`_
+* `h5pyd GitHub project <https://github.com/HDFGroup/h5pyd>`_
+* `Ask questions on the HDF Group Forum <https://forum.hdfgroup.org/c/hsds>`_
+* Andrew Collette's `Python and HDF5 O'Reilly book <https://shop.oreilly.com/product/0636920030249.do>`_
 
 
-Introductory info
+API Documentation
 -----------------
-
-.. toctree::
-    :maxdepth: 1
-
-    quick
-    build
-
-
-High-level API reference
-------------------------
 
 .. toctree::
     :maxdepth: 1
@@ -61,24 +64,18 @@ High-level API reference
     high/dims
     high/table
 
-CLI tools reference
--------------------
+.. _cli_docs:
+
+CLI Tools Documentation
+-----------------------
 
 .. toctree::
     :maxdepth: 1
 
-    apps/hsinfo
-    apps/hsls
-    apps/hsload
-    apps/hsget
-    apps/hstouch
-    apps/hsmv
-    apps/hscp
-    apps/hsdiff
-    apps/hsacl
+    apps
 
 
-Advanced topics
+Advanced Topics
 ---------------
 
 .. toctree::
@@ -98,7 +95,6 @@ Meta-info about the h5pyd project
 
     whatsnew/index
     contributing
-    release_guide
     faq
     h5py_unsupported
     licenses

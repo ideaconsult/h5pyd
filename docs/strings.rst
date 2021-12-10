@@ -1,3 +1,5 @@
+.. todo:: strings.rst
+
 .. _strings:
 
 Strings in HDF5
