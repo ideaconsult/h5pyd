@@ -30,3 +30,8 @@ globally with ``h5.get_config().track_order``.
 Fletcher32 filter is not supported.
 
 No virtual dataset methods for the Group class.
+
+From `dataset.rst`
+-----------------
+
+Not supported ``Dataset`` methods and properties: ``read_direct()``, ``write_direct()``, ``asstr()``, ``fields()``, ``iter_chunks()``, ``nbytes``.

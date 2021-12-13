@@ -22,7 +22,7 @@ the GUI package manager or::
 
     enpkg h5py
 
-To install from source see :ref:`install`.
+To install from source see :ref:`source_install`.
 
 Core concepts
 -------------
