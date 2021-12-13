@@ -3,19 +3,18 @@
 Object and Region References
 ============================
 
-In addition to soft and external links, HDF5 supplies one more mechanism to
-refer to objects and data in a file.  HDF5 *references* are low-level pointers
-to other objects.  The great advantage of references is that they can be
-stored and retrieved as data; you can create an attribute or an entire dataset
-of reference type.
+One of the HDF5 storage features is a mechanism to refer to objects and data in
+a file object.  HDF5 *references* are low-level pointers to other objects.  The
+great advantage of references is that they can be stored and retrieved as data;
+you can create an attribute or an entire dataset of reference type.
 
-References come in two flavors, object references and region references.
-As the name suggests, object references point to a particular object in a file,
-either a dataset, group or named datatype.  Region references always point to
-a dataset, and additionally contain information about a certain selection
-(*dataset region*) on that dataset.  For example, if you have a dataset
-representing an image, you could specify a region of interest, and store it
-as an attribute on the dataset.
+References come in two flavors, object references and region references. As the
+name suggests, object references point to a particular HDF5 object in a file
+object, either a dataset, group or named datatype.  Region references always
+point to a dataset, and additionally contain information about a certain
+selection (*dataset region*) on that dataset.  For example, if you have a
+dataset representing an image, you could specify a region of interest, and store
+it as an attribute on the dataset.
 
 
 .. _refs_object:
@@ -27,7 +26,7 @@ It's trivial to create a new object reference; every high-level object
 in h5py has a read-only property "ref", which when accessed returns a new
 object reference:
 
-    >>> myfile = h5py.File('myfile.hdf5')
+    >>> myfile = h5pyd.File('/home/myhome/myfile.hdf5')
     >>> mygroup = myfile['/some/group']
     >>> ref = mygroup.ref
     >>> print(ref)
@@ -58,9 +57,8 @@ dataset:
 
     >>> subset = myds[regref]
 
-For selections which don't conform to a regular grid, h5py copies the behavior
-of NumPy's fancy indexing, which returns a 1D array. Note that for h5py release
-before 2.2, h5py always returns a 1D array.
+For selections which don't conform to a regular grid, h5pyd copies the behavior
+of NumPy's fancy indexing, which returns a 1D array.
 
 In addition to storing a selection, region references inherit from object
 references, and can be used anywhere an object reference is accepted.  In this
@@ -70,22 +68,22 @@ Storing references in a dataset
 -------------------------------
 
 HDF5 treats object and region references as data.  Consequently, there is a
-special HDF5 type to represent them.  However, NumPy has no equivalent type.
+special HDF5 datatype to represent them.  However, NumPy has no equivalent type.
 Rather than implement a special "reference type" for NumPy, references are
-handled at the Python layer as plain, ordinary python objects.  To NumPy they
-are represented with the "object" dtype (kind 'O').  A small amount of
-metadata attached to the dtype tells h5py to interpret the data as containing
-reference objects.
+handled at the Python layer as plain, ordinary Python objects.  To NumPy they
+are represented with the "object" dtype (kind 'O').  A small amount of metadata
+attached to the dtype tells h5pyd to interpret the data as containing reference
+objects.
 
-These dtypes are available from h5py for references and region references:
+These dtypes are available from h5pyd for references and region references:
 
-* ``h5py.ref_dtype`` - for object references
-* ``h5py.regionref_dtype`` - for region references
+* ``h5pyd.ref_dtype`` - for object references
+* ``h5pyd.regionref_dtype`` - for region references
 
 To store an array of references, use the appropriate dtype when creating the
 dataset:
 
-    >>> ref_dataset = myfile.create_dataset("MyRefs", (100,), dtype=h5py.ref_dtype)
+    >>> ref_dataset = myfile.create_dataset("MyRefs", (100,), dtype=h5pyd.ref_dtype)
 
 You can read from and write to the array as normal:
 
@@ -96,7 +94,7 @@ You can read from and write to the array as normal:
 Storing references in an attribute
 ----------------------------------
 
-Simply assign the reference to a name; h5py will figure it out and store it
+Simply assign the reference to a name; h5pyd will figure it out and store it
 with the correct type:
 
     >>> myref = myfile.ref
