@@ -58,7 +58,7 @@ the credentials:
 3. Set hs_username and hs_password keys in a file ".hscfg" in the client's home directory.
 
 Using username and password in the file parameters overrides the environment variables or
-hscfg entries.  The `hsconfigure` app can be used to create/update the .hscfg file.
+hscfg entries.  The :ref:`hsconfigure` app can be used to create/update the .hscfg file.
 
 Note: In "direct" mode, the username is not validated, but the username is still used for
 for the authorization check.  See: :ref:`authorization`.
@@ -75,30 +75,35 @@ that define what actions can be performed by a given user.
 
 Each ACL is a dictionary with the following keys:
 
-userName: user that the ACL is associated with or "default"
-create: create operations allowed (e.g. create new dataset)
-read: read operation allowed (e.g. read value from dataset)
-update: update operations allowed (e.g. modify dataset value)
-delete: delete operations allowed (e.g. delete a link)
-readACL: the ACLs  can be read
-updateACL: ACLs can be modified
-
+userName
+    user that the ACL is associated with or "default"
+create
+    create operations allowed (e.g. create new dataset)
+read
+    ead operation allowed (e.g. read value from dataset)
+update
+    update operations allowed (e.g. modify dataset value)
+delete
+    delete operations allowed (e.g. delete a link)
+readACL
+    the ACLs  can be read
+updateACL
+    ACLs can be modified
 
 If no ACL is found for the given username that supports the requested mode, but an ACL
 with the username 'default' exists, the default ACL is used.
 
-If no ACL is found, a 403-Forbidden
-error is raised.
+If no ACL is found, a ``403-Forbidden`` error is raised.
 
 if an ACL is found, the operation is permitted if the corresponding ACL property is True,
-otherwise a 403-Forbidden error is raised.
+otherwise a ``403-Forbidden`` error is raised.
 
 For 'w' and 'a' modes, the parent folder must have an ACL with 'create' mode enabled.
 
 Finally, if the username is an admin user (as configured on the server), an action is allowed
 (assuming the user's credentials are valid).
 
-The hsacl tool can be used to read and update acls.  See: hsacl TBD
+The :ref:`hsacl` tool can be used to read and update acls.
 
 
 .. _concurrent:
@@ -159,18 +164,21 @@ Unsupported Featues
 The following h5py parameters are not supported by h5pyd (generally because they
 are not relevant):
 
-driver: no equivalent in h5pyd
-libver: HDF5 library is not used by h5pyd
-userblock_size: userblock not supported
-swmr: No single-writer-multiple-reader mode.  See :ref: _concurrent.
-rdcc_nybtes: No client-side chunk cache
-rdcc_w0: Chunk preemption controlled by server
-rdcc_nslots: No client-side chunk cache
-track_order: creation order is always tracked by server
-fs_strategy: Not relevant
-fs_persist: Not relevent
-fs_threshold: Not relevant
-kwds: No driver for h5pyd, so no driver-specific keywords
+================  ======================================================
+driver             no equivalent in h5pyd
+libver             HDF5 library is not used by h5pyd
+userblock_size     userblock not supported
+swmr               No single-writer-multiple-reader mode.  See :ref   _concurrent.
+rdcc_nybtes        No client-side chunk cache
+rdcc_w0            Chunk preemption controlled by server
+rdcc_nslots        No client-side chunk cache
+track_order        creation order is always tracked by server
+fs_strategy        Not relevant
+fs_persist         Not relevent
+fs_threshold       Not relevant
+kwds               No driver for h5pyd, so no driver-specific keywords
+================  ======================================================
+
 
 .. _file_closing:
 

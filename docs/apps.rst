@@ -300,6 +300,9 @@ Options
 --noattr  Do not compare attributes.
 --quiet  Do not produce output.
 
+
+.. _hsacl:
+
 hsacl
 =====
 
@@ -387,6 +390,7 @@ Options
     Change log level, one of: ``debug``, ``info``, ``warning``, ``error``.
 --bucket BUCKET  Storage bucket
 
+.. _hsconfigure:
 
 hsconfigure
 ===========
