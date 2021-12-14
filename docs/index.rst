@@ -1,8 +1,4 @@
-.. caution::
-
-    This documentation is work in progress and mistakes or incosistencies are possible. Please report them at https://github.com/HDFGroup/h5pyd. Pull requests are even better!
-
-
+=============================================
 Python Client Library for HDF5 REST Interface
 =============================================
 
@@ -20,7 +16,7 @@ However, any web service that implements the HDF REST API could be used as well.
 Being able to access HDF data via a web API can be useful in a variety of ways:
 providing remote data access, distributed applications, utilizing object-based
 storage (e.g. AWS S3, Azure Blob storage), and many other situations where
-having to setup file system access to HDF5 data would be impractical.
+providing file system access to HDF5 data would be impractical.
 
 The h5pyd package also includes a set of command line tools (CLI tools) for
 managing remote data. See :ref:`cli_docs`.
@@ -28,7 +24,13 @@ managing remote data. See :ref:`cli_docs`.
 h5pyd package is modeled after `h5py <https://docs.h5py.org>`_.  Software
 developed using h5py should be able to use h5pyd with no or only minor
 modifications. h5pyd developers express their gratitude to the h5py project for
-developing so functional API and great documentation.
+developing so functional API and great documentation which served as the
+template for this one.
+
+.. caution::
+    This documentation is work in progress and mistakes or incosistencies are
+    possible. Please report them at https://github.com/HDFGroup/h5pyd. Pull
+    requests are even better!
 
 
 Where to Start
@@ -37,8 +39,8 @@ Where to Start
 .. toctree::
     :maxdepth: 1
 
-    quick
     install
+    quick
 
 
 Other Resources
@@ -97,6 +99,7 @@ Meta-info about the h5pyd project
     faq
     h5py_unsupported
     licenses
+
 
 Don't forget to check these... (development phase only)
 -------------------------------------------------------
