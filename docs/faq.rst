@@ -108,14 +108,6 @@ There's also a PyTables perspective on this question at the
 `PyTables FAQ <http://www.pytables.org/FAQ.html#how-does-pytables-compare-with-the-h5py-project>`_.
 
 
-Does h5py support Parallel HDF5?
---------------------------------
-
-Starting with version 2.2, h5py supports Parallel HDF5 on UNIX platforms.
-``mpi4py`` is required, as well as an MPIO-enabled build of HDF5.
-Check out :ref:`parallel` for details.
-
-
 Variable-length (VLEN) data
 ---------------------------
 

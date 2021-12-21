@@ -6,13 +6,6 @@ What is Different from h5py?
     This is a collection place for all the h5py documentation that does not fit
     anywhere else for now.
 
-.. toctree::
-    :maxdepth: 1
-
-    mpi
-    vds
-    high/lowlevel
-
 From `group.rst`
 ----------------
 
@@ -32,6 +25,6 @@ Fletcher32 filter is not supported.
 No virtual dataset methods for the Group class.
 
 From `dataset.rst`
------------------
+------------------
 
 Not supported ``Dataset`` methods and properties: ``read_direct()``, ``write_direct()``, ``asstr()``, ``fields()``, ``iter_chunks()``, ``nbytes``.
