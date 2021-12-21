@@ -3,10 +3,6 @@
 CLI Tools
 ^^^^^^^^^
 
-.. contents::
-    :local:
-    :depth: 1
-    :this-will-duplicate-information-and-it-is-stilluseful-here:
 
 hsinfo
 ======
